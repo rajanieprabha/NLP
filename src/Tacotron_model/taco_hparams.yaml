@@ -1,0 +1,40 @@
+### Text
+
+
+### mel
+sample_rate : 22050  # hz
+fft_frame_size : 50.0  # ms
+fft_hop_size : 12.5  # ms
+num_mels : 80  # filters
+min_freq : 125  # hz
+max_freq : 7600  # hz
+floor_freq : 0.01  # reference freq for power to db conversion
+n_mfcc : 13
+hop_length : 512
+
+
+
+### Encoder
+padding_idx : 0
+embedding_dim : 512
+
+### Attention
+
+### Decoder
+max_iters : 50
+
+###optimizer
+lr : 0.3
+weight_decay : 0
+
+
+### train
+teacher_forcing_ratio : 1.0
+num_epochs : 5
+batch_size : 10
+resume: True
+valid_size : 0.1
+
+##
+seed : 250
+

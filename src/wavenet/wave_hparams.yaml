@@ -1,0 +1,42 @@
+### Audio
+input_type: "raw"
+quantize_channels: 65536
+sample_rate : 22050 # hz
+fft_frame_size : 50.0 # ms
+fft_hop_size : 12.5 # ms
+num_mels : 80 # filters
+min_freq : 125 # hz
+max_freq : 7600 # hz
+floor_freq : 0.01 # reference freq for power to db conversion
+n_mfcc: 13
+hop_length : 512
+
+
+### Model
+layers: 4
+dilation_channels: 32
+stacks: 2
+residual_channels: 32
+skip_channels: 256
+end_channels: 256
+classes: 256
+output_length: 1
+kernel_size: 2
+cin_channels: -1
+bias: False
+
+
+### Optimizer
+lr: 0.01
+weight_decay: 0
+
+### Training
+split: 0.7 # proportion of train set
+num_epoch: 1
+batch_size: 2
+log_every_n_samples: 100
+resume: False # resume training
+num_workers: 1 # cores used for data loading
+seed: 250 # random seed
+valid_size: 0.1
+
