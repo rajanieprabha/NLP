@@ -3,12 +3,13 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 from tqdm import tqdm
-from visualize import show_spectrogram, show_attention
-import src.Tacotron_model.taco_util as util
-import src.Tacotron_model.util as utils
+from Tacotron_model.visualize import show_spectrogram, show_attention
+import Tacotron_model.taco_util as util
+import Tacotron_model.util as utils
 import numpy as np
 
-from src.Tacotron_model.util import sequence_to_text
+from  Tacotron_model.util import sequence_to_text
+import IPython.display
 
 import logging
 log = logging.getLogger(__name__)
@@ -16,18 +17,23 @@ log = logging.getLogger(__name__)
 def train(model, optimizer, dataset, hparams, saved_checkpoint, log_interval=5):
     log.info("TRAINING STARTS")
     print("TRAINING STARTS")
+    print("Total epochs: ", hparams.num_epochs)
+
     model.train()
     writer = SummaryWriter()
     loader = util.fetch_dataloader(dataset,hparams)
     train_data = loader['train']
     train_loss = []
     step = 0
-    for epoch in tqdm(range(hparams.num_epochs), total=hparams.num_epochs, unit=' epochs'):
-        log.info("epoch{}").format(epoch)
+    total=hparams.num_epochs
+    for epoch in range(total):
+        log.info("epoch :" ,epoch)
         total_loss = 0
         pbar = tqdm(train_data, total=len(loader), unit=' batches')
+        print("\n Epoch: ", epoch)
 
         for b, (text_batch, audio_batch, text_lengths, audio_lengths) in enumerate(pbar):
+            print("\n Batch :", b)
             text = Variable(text_batch)
             targets = Variable(audio_batch, requires_grad=False)
 
@@ -64,16 +70,19 @@ def train(model, optimizer, dataset, hparams, saved_checkpoint, log_interval=5):
                                                return_array=True)
 
                 writer.add_image('Train attention', attention_plot, step)
-                writer.add_image('Train target', output_plot, step)
-                writer.add_image('Train output', target_plot, step)
+                writer.add_image('Train target', target_plot, step)
+                writer.add_image('Train output', output_plot, step)
+                utils.save_checkpoint({'step': step,
+                            'state_dict': model.state_dict(),
+                            'optim_dict': optimizer.state_dict()},
+                            checkpoint=saved_checkpoint)
+                
+                 
+              
                
                
             step += 1
 
-    utils.save_checkpoint({'step': step,
-                            'state_dict': model.state_dict(),
-                            'optim_dict': optimizer.state_dict()},
-                            checkpoint=saved_checkpoint)
 
     return np.mean(train_loss), step
 
@@ -84,11 +93,11 @@ def val(model, dataset, hparams, log_interval=5):
     writer = SummaryWriter()
     loader = util.fetch_dataloader(dataset, hparams)
     val_data = loader['val']
-    model.val()
+    model.eval()
     step = 0
     val_loss = []
     for epoch in tqdm(range(hparams.num_epochs), total=hparams.num_epochs, unit=' epochs'):
-        log.info("epoch{}").format(epoch)
+        log.info("epoch: ",epoch)
         total_loss = 0
         pbar = tqdm(val_data, total=len(loader), unit=' batches')
 
@@ -102,7 +111,7 @@ def val(model, dataset, hparams, log_interval=5):
             for i in range(len(stop_targets)):
                 stop_targets[i, audio_lengths[i] - 1] = 1
             stop_targets = Variable(stop_targets, requires_grad=False)
-            outputs, stop_tokens, attention = model(text, targets)
+            outputs, stop_tokens, attention = model(text)
             spec_loss = F.mse_loss(outputs, targets)
             stop_loss = F.binary_cross_entropy_with_logits(stop_tokens, stop_targets)
             loss = spec_loss + stop_loss
@@ -126,31 +135,29 @@ def val(model, dataset, hparams, log_interval=5):
                 writer.add_image('Val attention', attention_plot, step)
                 writer.add_image('Val target', output_plot, step)
                 writer.add_image('Val output', target_plot, step)
-
-
-
+              
             step += 1
-            print("Step: {} Loss: {}".format(step, total_loss))
+            print("Step:", step ," Loss: ", total_loss)
 
 
 
     return np.mean(val_loss)
 
 
-def train_and_evaluate(dataset, hparams, checkpoint):
+def train_and_evaluate(dataset, hparams, checkpoint, logdir):
     melnet = util.fetch_model(hparams)
     optimizer = util.fetch_optimizer(melnet, hparams)
     if checkpoint:
         state = utils.load_checkpoint(checkpoint)
         if hparams.resume:
-            log.info('Resuming training from checkpoint: {}'.format(checkpoint))
+            log.info('Resuming training from checkpoint: ',checkpoint)
             optimizer.load_state_dict(state['optim_dict'])
-        log.info('Loading model from checkpoint: {}'.format(checkpoint))
+        log.info('Loading model from checkpoint: ',checkpoint)
         melnet.load_state_dict(state['state_dict'])
 
     best_metric = 0.0
 
-    train_metric, step = train(melnet, optimizer, dataset, hparams,checkpoint, log_interval=5)
+    train_metric, step = train(melnet, optimizer, dataset, hparams,logdir, log_interval=5)
     val_metric = val(melnet, dataset, hparams, log_interval=5)
     is_best = False
     if val_metric >= best_metric:

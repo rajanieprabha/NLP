@@ -24,14 +24,14 @@ embedding_dim : 512
 max_iters : 50
 
 ###optimizer
-lr : 0.3
+lr : 0.2
 weight_decay : 0
 
 
 ### train
 teacher_forcing_ratio : 1.0
-num_epochs : 5
-batch_size : 10
+num_epochs : 10
+batch_size : 50
 resume: True
 valid_size : 0.1
 

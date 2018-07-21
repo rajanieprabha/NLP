@@ -3,6 +3,8 @@ from PIL import Image
 import io
 import numpy as np
 
+plt.switch_backend('agg')
+
 def show_spectrogram(spec, text=None, return_array=False):
     plt.figure(figsize=(14, 6))
     plt.imshow(spec)

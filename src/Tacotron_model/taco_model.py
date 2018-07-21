@@ -130,49 +130,6 @@ class Encoder(nn.Module):
         print(x.shape)
         return x, hidden
 
-class inference(nn.Module):
-    """
-    Decodes encoder output and previous predicted spectrogram frame into next spectrogram frame.
-    """
-
-    def __init__(self, hidden_size=1024, num_layers=2):
-        super(inference, self).__init__()
-        self.prenet = PreNet(in_features=80, out_features=256)
-        self.rnn = nn.GRU(input_size=512, hidden_size=hidden_size, num_layers=num_layers, dropout=0.1)
-        self.spec_out = nn.Linear(in_features=1024 + 256, out_features=80)
-        self.stop_out = nn.Linear(in_features=1024 + 256, out_features=1)
-        self.postnet = PostNet()
-
-    def _forward(self, previous_out, decoder_hidden=None):
-        """
-        Decodes a single frame
-        """
-        previous_out = self.prenet(previous_out)  # (4, 1, 256)
-        rnn_input = previous_out
-        rnn_out, hidden = self.rnn(rnn_input, decoder_hidden)
-        spec_frame = self.spec_out(rnn_out) # predict next audio frame
-        stop_token = self.stop_out(rnn_out)  # predict stop token
-        spec_frame = spec_frame.permute(1, 0, 2)
-        spec_frame = spec_frame + self.postnet(spec_frame)  # add residual
-        return spec_frame.permute(1, 0, 2), stop_token, decoder_hidden
-
-    def forward(self, encoder_out, teacher_forcing_ratio=0.5):
-        outputs = []
-        stop_tokens = []
-        masks = []
-
-        output, stop_token, hidden= self._forward(encoder_out)
-
-
-        outputs = torch.cat(outputs)
-        stop_tokens = torch.cat(stop_tokens)
-
-        stop_tokens = stop_tokens.transpose(1, 0).squeeze()
-        if len(stop_tokens.size()) == 1:
-            stop_tokens = stop_tokens.unsqueeze(0)
-
-        return outputs
-
 class Decoder(nn.Module):
     """
     Decodes encoder output and previous predicted spectrogram frame into next spectrogram frame.
@@ -242,15 +199,14 @@ class MelSpectrogramNet(nn.Module):
 
         #self.num_chars = num_chars
 
-    def forward(self, text, targets=None , teacher_forcing_ratio= None):
+    def forward(self, text, targets , teacher_forcing_ratio= None):
+        print(text.shape)
         encoder_output, _ = self.encoder(text)
-        if targets.empty:
-            outputs, stop_tokens, masks = self.decoder(encoder_output,
+     
+        outputs, stop_tokens, masks = self.decoder(encoder_output,
                                                    targets,teacher_forcing_ratio =teacher_forcing_ratio)
-            return outputs, stop_tokens, masks
-
-        else:
-            outputs = self.inference(encoder_output, teacher_forcing_ratio =teacher_forcing_ratio)
+        return outputs, stop_tokens, masks
+            
 
 
 

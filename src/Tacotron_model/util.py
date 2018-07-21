@@ -1,17 +1,21 @@
 import numpy as np
 import librosa
 import torch
-import src.hparam as hp
+import hparam as hp
 import os
 
 import logging
 log = logging.getLogger(__name__)
 
-hparameters = hp.load_params_from_yaml('Tacotron_model/taco_hparams.yaml')
+hparameters = hp.load_params_from_yaml('/home/rajaniep/code/UntitledFolder/project/src/Tacotron_model/taco_hparams.yaml')
 
 eos = '~'
 pad = '_'
-chars = pad + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!\'\"(),-.:;? ' + eos
+## for english
+#chars = pad + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!\'\"(),-.:;? ' + eos
+
+##for german
+chars = pad + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüß!\'\"(),-.:;? ' + eos
 
 
 char_to_id = {char: i for i, char in enumerate(chars)}
@@ -74,6 +78,7 @@ def collate_fn(batch):
         batch:
     Returns: Padded sequences and original sizes.
     """
+        
     text = [item[0] for item in batch]
     audio = [item[1] for item in batch]
 
